@@ -11,6 +11,19 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
  bird.evol.sim = function(reps,tmax,N0,carry_cap,mean1,sd1,mean2,sd2,env_opt,
                           mutation1,mutation2,comp_rate,inv_sel_str) {
+   
+   # Plotting setup code
+   layout(matrix(c(1, 2, 3), nrow = 3), heights = c(0.15, 1, 1))
+            par(mar = c(0, 0, 0, 0))
+            plot.new()
+            legend('center',
+                   legend = c('Bird species 1', 'Bird species 2'),
+                   col = c('#D55E00', '#0072B2'),
+                   lwd = 2, bty = 'n', horiz = TRUE)
+            all_meantrait1 = matrix(NA, nrow = reps, ncol = tmax)
+            all_meantrait2 = matrix(NA, nrow = reps, ncol = tmax)
+            all_popsize1 = matrix(NA, nrow = reps, ncol = tmax)
+            all_popsize2 = matrix(NA, nrow = reps, ncol = tmax)
         for (r in 1:reps) {
             # Populations/species both begin at N0 individuals
             N = N0
@@ -43,7 +56,7 @@ knitr::opts_chunk$set(echo = TRUE)
                     tic = 1
                 }
                 # Reproduction via Poisson distribution
-                # At the beginning of the sim and after each competitive cycle, surviving birds have offspring
+                # At the beginning of the sim and after each competitive cycle, surviving birds breed
                 # Single draw = single chance at offspring, lambda of 1.1 to keep offspring roughly 
                 # positive for surviving individuals, fecundity (lambda) is density-dependent
                 lambda_eff1 = 1.1 * max(0, (1 - length(pop1) / K))^2
@@ -95,52 +108,52 @@ knitr::opts_chunk$set(echo = TRUE)
                     }
                 }
                 # Save population sizes to vectors
-                popsize1[t] = length(pop1)
-                popsize2[t] = length(pop2)
-                # Save population mean trait values to vectors
-                meantrait1[t] = mean(pop1)
-                meantrait2[t] = mean(pop2)
-                
-              
+                if (t <= tmax) {
+                    popsize1[t] = length(pop1)
+                    popsize2[t] = length(pop2)
+                    meantrait1[t] = mean(pop1)
+                    meantrait2[t] = mean(pop2)
+                }
             }
-            # Plot the results, color-blind friendly Okabe color palette
-            layout(matrix(c(1, 2, 3), nrow = 3), heights = c(0.15, 1, 1))
-            par(mar = c(0, 0, 0, 0))
-            plot.new()
-            legend('center',
-                   legend = c('Bird species 1', 'Bird species 2'),
-                   col = c('#D55E00', '#0072B2'),
-                   lwd = 2, bty = 'n', horiz = TRUE)
-
-            par(mar = c(4, 5, 3, 2))
-            if (r == 1) {
-                plot(meantrait1, type = 'l', lwd = 2,
-                     ylim = c(min(c(meantrait1, meantrait2), na.rm = TRUE),
-                              max(c(meantrait1, meantrait2), na.rm = TRUE)),
-                     col = '#D55E00', xlab = 'Time', ylab = 'Mean trait value',
-                     main = 'Trait evolution')
-                lines(meantrait2, lwd = 2, col = '#0072B2')
-            } else {
-                lines(meantrait1, lwd = 2, col = '#D55E00')
-                lines(meantrait2, lwd = 2, col = '#0072B2')
+            last_t = min(t, tmax)
+            if (last_t < tmax) {
+                meantrait1[(last_t + 1):tmax] = NA
+                meantrait2[(last_t + 1):tmax] = NA
+                popsize1[(last_t + 1):tmax] = NA
+                popsize2[(last_t + 1):tmax] = NA
             }
-            
-            par(mar = c(4, 5, 3, 2))
-            if (r == 1) {
-                plot(popsize1, type = 'l', lwd = 2,
-                     ylim = c(0, max(c(popsize1, popsize2), na.rm = TRUE)),
-                     col = '#D55E00', xlab = 'Time', ylab = 'Population size',
-                     main = 'Population dynamics')
-                lines(popsize2, lwd = 2, col = '#0072B2')
-            } else {
-                lines(popsize1, lwd = 2, col = '#D55E00')
-                lines(popsize2, lwd = 2, col = '#0072B2')
-            }
+            all_meantrait1[r, ] = meantrait1
+            all_meantrait2[r, ] = meantrait2
+            all_popsize1[r, ] = popsize1
+            all_popsize2[r, ] = popsize2
         }
+            # Plot the results, color-blind friendly Okabe color palette
+            par(mfg = c(2, 1))
+            par(mar = c(4, 5, 3, 2))
+            plot(all_meantrait1[1, ], type = 'l', lwd = 2,
+                 ylim = c(min(c(all_meantrait1, all_meantrait2), na.rm = TRUE),
+                          max(c(all_meantrait1, all_meantrait2), na.rm = TRUE)),
+                 col = '#D55E00', xlab = 'Time', ylab = 'Mean trait value',
+                 main = 'Trait evolution')
+            for (r in 1:reps) {
+                lines(all_meantrait1[r, ], lwd = 2, col = '#D55E00')
+                lines(all_meantrait2[r, ], lwd = 2, col = '#0072B2')
+            }
+
+            par(mfg = c(3, 1))
+            par(mar = c(4, 5, 3, 2))
+            plot(all_popsize1[1, ], type = 'l', lwd = 2,
+                 ylim = c(0, max(c(all_popsize1, all_popsize2), na.rm = TRUE)),
+                 col = '#D55E00', xlab = 'Time', ylab = 'Population size',
+                 main = 'Population dynamics')
+            for (r in 1:reps) {
+                lines(all_popsize1[r, ], lwd = 2, col = '#D55E00')
+                lines(all_popsize2[r, ], lwd = 2, col = '#0072B2')
+            }
     }
 
     # PARAMETERS
-    # reps = number of repetitions (keep this at 1)
+    # reps = number of repetitions
     # tmax = number of timesteps
     # N0 = initial population size (same for both species)
     # carry_cap = carrying capacity (same for both species)
@@ -155,9 +168,9 @@ knitr::opts_chunk$set(echo = TRUE)
     # mutation2 = species 2 standard trait deviation of offspring
 
     # RUN EVOLUTION SIMULATION
-    bird.evol.sim(reps=1, tmax=200, N0=100, carry_cap=500,
-                  mean1=3, sd1=0.5, 
-                  mean2=3, sd2=0.5, 
-                  env_opt=3, mutation1=0.05, mutation2=0.05, 
-                  inv_sel_str=0.7, comp_rate=0.5)
+    bird.evol.sim(reps=5, tmax=200, N0=100, carry_cap=500,
+                  mean1=2, sd1=0.5, 
+                  mean2=2, sd2=0.5, 
+                  env_opt=5, mutation1=0.05, mutation2=0.05, 
+                  inv_sel_str=1, comp_rate=0.4)
 ```
