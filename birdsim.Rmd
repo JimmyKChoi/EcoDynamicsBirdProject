@@ -83,8 +83,8 @@ knitr::opts_chunk$set(echo = TRUE)
                 comp1 = sample(pop1, size = 1)
                 comp2 = sample(pop2, size = 1)
                 # Calculating win probabilities
-                p_win1 = 1- pnorm(abs(comp1 - env_optimum) / inverse_selection_strength)
-                p_win2 = 1- pnorm(abs(comp2 - env_optimum) / inverse_selection_strength)
+                p_win1 = 1 - pnorm(abs(comp1 - env_optimum) / inverse_selection_strength)
+                p_win2 = 1 - pnorm(abs(comp2 - env_optimum) / inverse_selection_strength)
                 # Make 'em fight!
                 if (runif(1) < p_win1 / (p_win1 + p_win2)) {
                     pop2 = pop2[-match(comp2, pop2)]
