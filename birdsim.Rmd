@@ -1,0 +1,161 @@
+---
+title: "birdsimulation"
+output: html_document
+date: "2026-05-04"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+ bird.evol.sim = function(reps,tmax,N0,carry_cap,mean1,sd1,mean2,sd2,env_opt,
+                          mutation1,mutation2,comp_rate,inv_sel_str) {
+        for (r in 1:reps) {
+            # Populations/species both begin at N0 individuals
+            N = N0
+            # Both populations/species have carrying capacities
+            K = carry_cap
+            # Draw random trait values for individuals from normal distributions
+            # With means of mean0 & mean1 and standard deviations given by parameters sd0 & sd1
+            pop1 = rnorm(N, mean1, sd1)
+            pop2 = rnorm(N, mean2, sd2)
+            # Initialize vectors to save population and trait values
+            # Plus trait optimum (as set by environment) and strength of selection
+            # Note: because we are using the width of the selection surface as our measure of
+            # strength of selection, the relationship is inverse (higher value = weaker sel.)
+            popsize1 = numeric(tmax)
+            popsize2 = numeric(tmax)
+            meantrait1 = numeric(tmax)
+            meantrait2 = numeric(tmax)
+            tic = 0
+            t = 0
+            env_optimum = env_opt
+            inverse_selection_strength = inv_sel_str
+          
+        
+            while ((t <= tmax) && (tic == 0)) {
+                # Advance time by 1
+                t = t + 1
+                # If either species/population goes extinct, stop 
+                # Populations effectively go extinct at N = 1 due to parent necessity
+                if (length(pop1) <= 1 || length(pop2) <= 1) {
+                    tic = 1
+                }
+                # Reproduction via Poisson distribution
+                # At the beginning of the sim and after each competitive cycle, surviving birds have offspring
+                # Single draw = single chance at offspring, lambda of 1.5 to keep offspring roughly 
+                # between 0 and 3
+                offspring1 = rpois(n = length(pop1), lambda = 1.5)
+                offspring2 = rpois(n = length(pop2), lambda = 1.5)
+                
+                # Assume that offspring has midpoint trait value between parents (randomly
+                # drawn from 2 surviving inds.) +/- some mutation
+                if (sum(offspring1) >= 1 && length(pop1) >= 2) {
+                    for (i in 1:length(offspring1)) {
+                        parents1 = sample(x = pop1, size = 2, replace = FALSE)
+                        z_mid1 = mean(parents1)
+                        epsilon1 = rnorm(offspring1[i], mean = 0, mutation1)
+                        newpop1 = (z_mid1 + epsilon1)
+                        pop1 = c(pop1,newpop1)
+                    }
+                }
+                
+                if (sum(offspring2) >= 1 && length(pop2) >= 2) {
+                    for (i in 1:length(offspring2)) {
+                        parents2 = sample(x = pop2, size = 2, replace = FALSE)
+                        z_mid2 = mean(parents2)
+                        epsilon2 = rnorm(offspring2[i], mean = 0, mutation2)
+                        newpop2 = (z_mid2 + epsilon2)
+                        pop2 = c(pop2,newpop2)
+                    }
+                }
+                # Cap populations
+                if (length(pop1) > K) pop1 = sample(pop1, K)
+                if (length(pop2) > K) pop2 = sample(pop2, K)
+                
+                # Competition: drawing random ind. (and corresponding trait value) 
+                # from a subset of each species/pop
+                competition_rate = comp_rate
+                n_competitions = round(min(length(pop1), length(pop2)) * competition_rate)
+                for (c in 1:n_competitions) {
+                  if (length(pop1) <= 1 || length(pop2) <= 1) break
+                comp1 = sample(pop1, size = 1)
+                comp2 = sample(pop2, size = 1)
+                # Calculating win probabilities
+                p_win1 = pnorm((comp1 - env_optimum) / inverse_selection_strength)
+                p_win2 = pnorm((comp2 - env_optimum) / inverse_selection_strength)
+                # Make 'em fight!
+                if (runif(1) < p_win1 / (p_win1 + p_win2)) {
+                    pop2 = pop2[-match(comp2, pop2)]
+                    } else {
+                    pop1 = pop1[-match(comp1, pop1)]
+                    }
+                }
+                # Save population sizes to vectors
+                popsize1[t] = length(pop1)
+                popsize2[t] = length(pop2)
+                # Save population mean trait values to vectors
+                meantrait1[t] = mean(pop1)
+                meantrait2[t] = mean(pop2)
+                
+              
+            }
+            # Plot the results, color-blind friendly Okabe color palette
+            layout(matrix(c(1, 2, 3), nrow = 3), heights = c(0.15, 1, 1))
+            par(mar = c(0, 0, 0, 0))
+            plot.new()
+            legend('center',
+                   legend = c('Bird species 1', 'Bird species 2'),
+                   col = c('#D55E00', '#0072B2'),
+                   lwd = 2, bty = 'n', horiz = TRUE)
+
+            par(mar = c(4, 5, 3, 2))
+            if (r == 1) {
+                plot(meantrait1, type = 'l', lwd = 2,
+                     ylim = c(min(c(meantrait1, meantrait2), na.rm = TRUE),
+                              max(c(meantrait1, meantrait2), na.rm = TRUE)),
+                     col = '#D55E00', xlab = 'Time', ylab = 'Mean trait value',
+                     main = 'Trait evolution')
+                lines(meantrait2, lwd = 2, col = '#0072B2')
+            } else {
+                lines(meantrait1, lwd = 2, col = '#D55E00')
+                lines(meantrait2, lwd = 2, col = '#0072B2')
+            }
+            
+            par(mar = c(4, 5, 3, 2))
+            if (r == 1) {
+                plot(popsize1, type = 'l', lwd = 2,
+                     ylim = c(0, max(c(popsize1, popsize2), na.rm = TRUE)),
+                     col = '#D55E00', xlab = 'Time', ylab = 'Population size',
+                     main = 'Population dynamics')
+                lines(popsize2, lwd = 2, col = '#0072B2')
+            } else {
+                lines(popsize1, lwd = 2, col = '#D55E00')
+                lines(popsize2, lwd = 2, col = '#0072B2')
+            }
+        }
+    }
+
+    # PARAMETERS
+    # reps = number of repetitions (keep this at 1)
+    # tmax = number of timesteps
+    # N0 = initial population size (same for both species)
+    # carry_cap = carrying capacity (same for both species)
+    # mean1 = initial species 1 trait mean
+    # sd1 = initial species 1 trait stdev
+    # mean2 = initial species 2 trait mean
+    # sd2 = initial species 2 trait stdev
+    # env_opt = trait optimum as selected for by environment
+    # inv_sel_str = width of selection surface (inverse to selection strength)
+    # comp_rate = proportion of each population that competes in each timestep
+    # mutation1 = species 1 standard trait deviation of offspring
+    # mutation2 = species 2 standard trait deviation of offspring
+
+    # RUN EVOLUTION SIMULATION
+    bird.evol.sim(reps=1, tmax=200, N0=100, carry_cap=500,
+                  mean1=2, sd1=0.5, 
+                  mean2=3.5, sd2=0.5, 
+                  env_opt=3, mutation1=0.05, mutation2=0.05, 
+                  inv_sel_str=1, comp_rate=0.1)
+```
