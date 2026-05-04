@@ -83,8 +83,8 @@ knitr::opts_chunk$set(echo = TRUE)
                 comp1 = sample(pop1, size = 1)
                 comp2 = sample(pop2, size = 1)
                 # Calculating win probabilities
-                p_win1 = pnorm((comp1 - env_optimum) / inverse_selection_strength)
-                p_win2 = pnorm((comp2 - env_optimum) / inverse_selection_strength)
+                p_win1 = 1- pnorm(abs(comp1 - env_optimum) / inverse_selection_strength)
+                p_win2 = 1- pnorm(abs(comp2 - env_optimum) / inverse_selection_strength)
                 # Make 'em fight!
                 if (runif(1) < p_win1 / (p_win1 + p_win2)) {
                     pop2 = pop2[-match(comp2, pop2)]
@@ -154,8 +154,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
     # RUN EVOLUTION SIMULATION
     bird.evol.sim(reps=1, tmax=200, N0=100, carry_cap=500,
-                  mean1=2, sd1=0.5, 
-                  mean2=3.5, sd2=0.5, 
+                  mean1=2.8, sd1=0.5, 
+                  mean2=4, sd2=0.5, 
                   env_opt=3, mutation1=0.05, mutation2=0.05, 
                   inv_sel_str=1, comp_rate=0.1)
 ```
