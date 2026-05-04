@@ -44,10 +44,12 @@ knitr::opts_chunk$set(echo = TRUE)
                 }
                 # Reproduction via Poisson distribution
                 # At the beginning of the sim and after each competitive cycle, surviving birds have offspring
-                # Single draw = single chance at offspring, lambda of 1.5 to keep offspring roughly 
-                # between 0 and 3
-                offspring1 = rpois(n = length(pop1), lambda = 1.5)
-                offspring2 = rpois(n = length(pop2), lambda = 1.5)
+                # Single draw = single chance at offspring, lambda of 1.1 to keep offspring roughly 
+                # positive for surviving individuals, fecundity (lambda) is density-dependent
+                lambda_eff1 = 1.1 * max(0, (1 - length(pop1) / K))^2
+                lambda_eff2 = 1.1 * max(0, (1 - length(pop2) / K))^2
+                offspring1 = rpois(n = length(pop1), lambda = lambda_eff1)
+                offspring2 = rpois(n = length(pop2), lambda = lambda_eff2)
                 
                 # Assume that offspring has midpoint trait value between parents (randomly
                 # drawn from 2 surviving inds.) +/- some mutation
@@ -154,8 +156,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
     # RUN EVOLUTION SIMULATION
     bird.evol.sim(reps=1, tmax=200, N0=100, carry_cap=500,
-                  mean1=2.8, sd1=0.5, 
-                  mean2=4, sd2=0.5, 
+                  mean1=3, sd1=0.5, 
+                  mean2=3, sd2=0.5, 
                   env_opt=3, mutation1=0.05, mutation2=0.05, 
-                  inv_sel_str=1, comp_rate=0.1)
+                  inv_sel_str=0.7, comp_rate=0.5)
 ```
