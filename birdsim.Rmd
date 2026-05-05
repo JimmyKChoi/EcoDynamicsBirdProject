@@ -107,7 +107,7 @@ knitr::opts_chunk$set(echo = TRUE)
                     pop1 = pop1[-match(comp1, pop1)]
                     }
                 }
-                # Save population sizes to vectors
+                # Save population sizes and mean trait values to vectors
                 if (t <= tmax) {
                     popsize1[t] = length(pop1)
                     popsize2[t] = length(pop2)
@@ -169,8 +169,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
     # RUN EVOLUTION SIMULATION
     bird.evol.sim(reps=5, tmax=200, N0=100, carry_cap=500,
-                  mean1=2, sd1=0.5, 
-                  mean2=2, sd2=0.5, 
-                  env_opt=5, mutation1=0.05, mutation2=0.05, 
+                  mean1=1, sd1=0.5, 
+                  mean2=5, sd2=0.5, 
+                  env_opt=3, mutation1=0.1, mutation2=0.05, 
                   inv_sel_str=1, comp_rate=0.4)
 ```
